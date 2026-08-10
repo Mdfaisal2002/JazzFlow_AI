@@ -34,6 +34,16 @@ const Main = ({
 
     const textareaRef = useRef(null);
 
+    // =========================================
+    // Conversation scroll container ref
+    // =========================================
+    // This ref points at the SAME element that holds
+    // overflow-y-auto (the <main> below). We scroll *this*
+    // element's scrollTop directly instead of using
+    // scrollIntoView, so only the conversation pane moves —
+    // never the page/body.
+    const messagesContainerRef = useRef(null);
+
     useEffect(() => {
 
         const vv = window.visualViewport;
@@ -55,6 +65,22 @@ const Main = ({
         };
 
     }, []);
+
+    // =========================================
+    // Auto-scroll conversation to bottom
+    // =========================================
+    // Runs whenever messages change (new message sent) or while
+    // the AI response is streaming in. Scrolls only the messages
+    // container (scrollTop), so the header/input/page never move.
+    useEffect(() => {
+
+        const container = messagesContainerRef.current;
+
+        if (!container) return;
+
+        container.scrollTop = container.scrollHeight;
+
+    }, [messages, loading]);
 
     // =========================================
     // Generate Chat Title
@@ -399,12 +425,17 @@ const Main = ({
         ========================= */}
 
             <div
+                ref={messagesContainerRef}
                 className="
                 flex-1
                 min-h-0
                 overflow-y-auto
                 overscroll-contain
             "
+                style={{
+                    WebkitOverflowScrolling: "touch",
+                    touchAction: "pan-y",
+                }}
             >
 
                 {/* =========================
@@ -688,6 +719,7 @@ const Main = ({
                                 className={`
                                 flex
                                 w-full
+                                min-w-0
                                 ${msg.role === "user"
                                         ? "justify-end"
                                         : "justify-start"
@@ -699,18 +731,23 @@ const Main = ({
                                     className={` 
                                             max-w-[88%]
                                             sm:max-w-[80%]
+                                            min-w-0
                                             rounded-2xl
                                             px-4
                                             sm:px-5
                                             py-3
                                             shadow-md
                                             whitespace-pre-wrap
-                                            break-all
+                                            wrap-break-word
                                             ${msg.role === "user"
                                             ? "bg-[#329CEF] text-white"
                                             : "bg-[#1C2637] text-[#E6EDF7]"
                                         }
 `}
+                                    style={{
+                                        overflowWrap: "anywhere",
+                                        wordBreak: "break-word",
+                                    }}
                                 >
 
                                     <p
