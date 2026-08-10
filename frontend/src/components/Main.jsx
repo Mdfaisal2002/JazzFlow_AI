@@ -1,19 +1,30 @@
-import { FileSearch, Plus, SendHorizontal, ChartNoAxesCombined, Code2 } from "lucide-react";
+import {
+    FileSearch,
+    Plus,
+    SendHorizontal,
+    ChartNoAxesCombined,
+    Code2,
+} from "lucide-react";
+
 import { useRef, useState, useEffect } from "react";
-import sendMessage from '../services/aiService.js'
-import api from '../api/api.js'
+import sendMessage from "../services/aiService.js";
+import api from "../api/api.js";
 
 const Main = ({
     chatId: selectedChatId,
     onChatCreated,
 }) => {
 
-    const [message, setMessage] = useState("")
-    const [messages, setMessages] = useState([])
-    const [loading, setLoading] = useState(false)
-    const [chatId, setChatId] = useState(null)
+    const [message, setMessage] = useState("");
+    const [messages, setMessages] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [chatId, setChatId] = useState(null);
 
-    const textareaRef = useRef()
+    const textareaRef = useRef(null);
+
+    // =========================================
+    // CREATE CHAT
+    // =========================================
 
     const createChat = async (firstMessage) => {
 
@@ -22,12 +33,11 @@ const Main = ({
             const title = generateChatTitle(firstMessage);
 
             const response = await api.post("/ai/chat/", {
-                title
+                title,
             });
 
             const newChatId = response.data.chat._id;
 
-            // Store locally inside Main
             setChatId(newChatId);
 
             return newChatId;
@@ -44,52 +54,9 @@ const Main = ({
     };
 
 
-    // const handleSend = async () => {
-
-    //     if (!message.trim()) return;
-
-
-    //     //add user msg
-    //     setMessages(prev =>
-    //         [
-    //             ...prev,
-    //             {
-    //                 role: "user",
-    //                 text: message
-    //             }
-    //         ])
-
-    //     //loading
-    //     setLoading(true)
-
-    //     //clear the input box
-    //     setMessage("")
-
-    //     if (textareaRef.current) {
-    //         textareaRef.current.style.height = "auto"
-    //     }
-
-    //     try {
-    //         //get AI reply
-    //         const reply = await sendMessage(message)
-
-    //         //add AI reply
-    //         setMessages(prev => [
-    //             ...prev,
-    //             {
-    //                 role: "assistant",
-    //                 text: reply
-    //             }
-    //         ])
-    //         console.log(reply)
-    //     }
-    //     catch (error) {
-    //         console.log(error.message)
-    //     }
-    //     finally {
-    //         setLoading(false)
-    //     }
-    // }
+    // =========================================
+    // SEND MESSAGE
+    // =========================================
 
     const handleSend = async () => {
 
@@ -127,12 +94,11 @@ const Main = ({
                     setLoading(false);
                     return;
                 }
-
             }
 
 
             // =========================================
-            // 3. Add user message immediately
+            // 3. Add user message
             // =========================================
 
             setMessages((prev) => [
@@ -158,7 +124,7 @@ const Main = ({
 
 
             // =========================================
-            // 5. Tell Sidebar to refresh history
+            // 5. Refresh sidebar history
             // =========================================
 
             if (!chatId) {
@@ -167,7 +133,7 @@ const Main = ({
 
 
             // =========================================
-            // 6. Send message to backend
+            // 6. Send message
             // =========================================
 
             const response = await api.post(
@@ -204,7 +170,7 @@ const Main = ({
 
 
                 // =====================================
-                // 8. Update AI message progressively
+                // 8. Update AI response progressively
                 // =====================================
 
                 setMessages((prev) => {
@@ -224,12 +190,10 @@ const Main = ({
                             content:
                                 updated[lastIndex].content + chunk,
                         };
-
                     }
 
                     return updated;
                 });
-
             }
 
         } catch (error) {
@@ -251,27 +215,33 @@ const Main = ({
         } finally {
 
             setLoading(false);
-
         }
     };
 
 
+    // =========================================
+    // INPUT CHANGE
+    // =========================================
+
     const handleInputChange = (e) => {
-        setMessage(e.target.value)
 
-        const textarea = textareaRef.current
+        setMessage(e.target.value);
 
+        const textarea = textareaRef.current;
 
         if (!textarea) return;
 
-        // Reset height
-        textarea.style.height = "auto"
+        textarea.style.height = "auto";
 
-        //Grow to fit content upto 200px
-        textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`
-    }
+        textarea.style.height =
+            `${Math.min(textarea.scrollHeight, 200)}px`;
+    };
 
-    // Load an existing chat
+
+    // =========================================
+    // LOAD EXISTING CHAT
+    // =========================================
+
     useEffect(() => {
 
         if (selectedChatId) {
@@ -281,18 +251,35 @@ const Main = ({
     }, [selectedChatId]);
 
 
-    // New Chat
+    // =========================================
+    // NEW CHAT
+    // =========================================
+
     useEffect(() => {
 
         if (selectedChatId === null) {
+
             setChatId(null);
             setMessages([]);
+            setMessage("");
+            setLoading(false);
+
+            if (textareaRef.current) {
+                textareaRef.current.style.height = "auto";
+            }
         }
 
     }, [selectedChatId]);
 
+
+    // =========================================
+    // LOAD CHAT
+    // =========================================
+
     const loadChat = async (id) => {
+
         try {
+
             const response = await api.get(`/ai/chat/${id}`);
 
             const chat = response.data;
@@ -305,7 +292,9 @@ const Main = ({
                     content: msg.content,
                 }))
             );
+
         } catch (error) {
+
             console.error(
                 "Load chat error:",
                 error.response?.data || error.message
@@ -313,7 +302,13 @@ const Main = ({
         }
     };
 
+
+    // =========================================
+    // GENERATE CHAT TITLE
+    // =========================================
+
     const generateChatTitle = (text) => {
+
         const cleanText = text.trim();
 
         if (cleanText.length <= 40) {
@@ -323,149 +318,813 @@ const Main = ({
         return cleanText.substring(0, 40) + "...";
     };
 
+
+    // =========================================
+    // QUICK PROMPT
+    // =========================================
+
+    const handleQuickPrompt = (prompt) => {
+
+        if (loading) return;
+
+        setMessage(prompt);
+
+        setTimeout(() => {
+            textareaRef.current?.focus();
+        }, 50);
+    };
+
+
     return (
-        <div className="flex flex-col bg-[#0B0F19] h-screen max-h-screen sm:px-4 lg:px-6 ">
-            <div className="flex-1 overflow-auto">
-                {/* heading */}
-                {messages.length == 0 && (
-                    <div className="flex flex-col justify-center items-center min-h-full">
-                        <div className="text-center mb-10">
-                            <h1 className="text-2xl sm:text-3xl lg:text-4xl mb-2 font-bold text-[#D4E4FA] text-center">How can <span className="text-[#ADC6FF]">JazzFlow</span> help today?</h1>
-                            <p className="max-w-2xl mx-auto text-center text-sm sm:text-base text-[#ccd2e2] ">Your professional AI partner for analysis, stratagy, and deep insights.</p>
+
+        <div className="
+            flex
+            flex-col
+            h-screen
+            max-h-screen
+            min-w-0
+            overflow-hidden
+            bg-[#0B0F19]
+            text-white
+        ">
+
+
+            {/* =====================================
+                CHAT CONTENT
+            ===================================== */}
+
+            <div
+                className="
+                    flex-1
+                    min-h-0
+                    overflow-y-auto
+                    overflow-x-hidden
+                    scroll-smooth
+                "
+            >
+
+                {/* =====================================
+                    WELCOME SCREEN
+                ===================================== */}
+
+                {messages.length === 0 && (
+
+                    <div
+                        className="
+                            min-h-full
+                            flex
+                            flex-col
+                            justify-center
+                            items-center
+                            px-4
+                            sm:px-6
+                            py-10
+                        "
+                    >
+
+                        {/* Welcome heading */}
+
+                        <div
+                            className="
+                                text-center
+                                max-w-3xl
+                                mb-8
+                                sm:mb-10
+                            "
+                        >
+
+                            <div
+                                className="
+                                    inline-flex
+                                    items-center
+                                    px-3
+                                    py-1.5
+                                    mb-4
+                                    rounded-full
+                                    bg-[#172033]
+                                    border
+                                    border-[#263244]
+                                    text-xs
+                                    sm:text-sm
+                                    text-[#ADC6FF]
+                                "
+                            >
+                                AI-powered workspace
+                            </div>
+
+
+                            <h1
+                                className="
+                                    text-2xl
+                                    sm:text-3xl
+                                    md:text-4xl
+                                    lg:text-5xl
+                                    font-bold
+                                    leading-tight
+                                    tracking-tight
+                                    text-[#D4E4FA]
+                                "
+                            >
+                                How can{" "}
+                                <span className="text-[#ADC6FF]">
+                                    JazzFlow
+                                </span>{" "}
+                                help today?
+                            </h1>
+
+
+                            <p
+                                className="
+                                    mt-3
+                                    sm:mt-4
+                                    text-sm
+                                    sm:text-base
+                                    md:text-lg
+                                    leading-relaxed
+                                    text-[#929DB1]
+                                    max-w-2xl
+                                    mx-auto
+                                "
+                            >
+                                Your professional AI partner for analysis,
+                                strategy, coding, and deep insights.
+                            </p>
+
                         </div>
 
-                        {/* cards */}
-                        {messages.length == 0 && (
-                            <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-3 gap-4 w-full max-w-6xl mb-20 ">
-                                <div className=" flex gap-2 md:block items-center p-1 group bg-[#1C2637] md:p-5 rounded-xl mx-4 hover:-translate-y-2 transition delay-75 border-2 border-transparent  hover:border-[#b7cbf7] ">
-                                    <FileSearch className="w-10 h-10 text-[#8A9FCE] bg-[#2B3649] rounded-xl p-2 m-2  group-hover:bg-[#b7cbf7] group-hover:text-[#2B3649] " />
-                                    <h1 className="text-[#C9D8ED] py-2 text-lg sm:xl font-bold">Analyze a document</h1>
-                                    <p className="hidden md:block text-[#9298A8]">Upload PDFs for rapid summarization and deep data extraction.</p>
+
+                        {/* =====================================
+                            QUICK ACTION CARDS
+                        ===================================== */}
+
+                        <div
+                            className="
+                                grid
+                                grid-cols-1
+                                sm:grid-cols-3
+                                gap-3
+                                sm:gap-4
+                                w-full
+                                max-w-5xl
+                                mb-8
+                            "
+                        >
+
+                            {/* Document */}
+
+                            <button
+                                onClick={() =>
+                                    handleQuickPrompt(
+                                        "Help me analyze a document and extract the most important information."
+                                    )
+                                }
+                                className="
+                                    group
+                                    w-full
+                                    text-left
+                                    flex
+                                    items-center
+                                    sm:block
+                                    gap-3
+                                    p-4
+                                    sm:p-5
+                                    rounded-2xl
+                                    bg-[#111827]
+                                    border
+                                    border-[#263244]
+                                    hover:border-[#526A91]
+                                    hover:bg-[#151F30]
+                                    active:scale-[0.98]
+                                    transition-all
+                                    duration-200
+                                "
+                            >
+
+                                <div
+                                    className="
+                                        w-11
+                                        h-11
+                                        shrink-0
+                                        flex
+                                        items-center
+                                        justify-center
+                                        rounded-xl
+                                        bg-[#1D2A3D]
+                                        group-hover:bg-[#263A58]
+                                        transition
+                                    "
+                                >
+                                    <FileSearch
+                                        className="
+                                            w-5
+                                            h-5
+                                            text-[#ADC6FF]
+                                        "
+                                    />
                                 </div>
-                                <div className="group flex gap-2 md:block items-center p-1 bg-[#1C2637] md:p-5 rounded-xl mx-4 hover:-translate-y-2 transition delay-75 border-2 border-transparent  hover:border-[#b7cbf7] ">
-                                    <ChartNoAxesCombined className="w-10 h-10 text-[#8A9FCE] bg-[#2B3649] rounded-xl p-2 m-2 group-hover:bg-[#b7cbf7] group-hover:text-[#2B3649] " />
-                                    <h1 className="text-[#C9D8ED] py-2 text-xl font-bold">Marketing strategy</h1>
-                                    <p className="hidden md:block text-[#9298A8]">Generate omni-channel campaigns based on target personas.</p>
+
+
+                                <div className="min-w-0 sm:mt-4">
+
+                                    <h2
+                                        className="
+                                            text-sm
+                                            sm:text-base
+                                            font-semibold
+                                            text-[#DCE7F8]
+                                        "
+                                    >
+                                        Analyze a document
+                                    </h2>
+
+                                    <p
+                                        className="
+                                            mt-1
+                                            text-xs
+                                            sm:text-sm
+                                            leading-relaxed
+                                            text-[#7F8EA3]
+                                            line-clamp-2
+                                        "
+                                    >
+                                        Summarize documents and extract
+                                        important information.
+                                    </p>
+
                                 </div>
-                                <div className="group flex gap-2 md:block items-center p-1 bg-[#1C2637] md:p-5 rounded-xl mx-4 hover:-translate-y-2 transition delay-75 border-2 border-transparent  hover:border-[#b7cbf7] ">
-                                    <Code2 className="w-10 h-10 text-[#8A9FCE] bg-[#2B3649] rounded-xl p-2 m-2  group-hover:bg-[#b7cbf7] group-hover:text-[#2B3649] " />
-                                    <h1 className="text-[#C9D8ED] py-2 text-xl font-bold">Review my code</h1>
-                                    <p className="hidden md:block text-[#9298A8]">Identify bugs, optimize performance, and refactor architecture.</p>
+
+                            </button>
+
+
+                            {/* Marketing */}
+
+                            <button
+                                onClick={() =>
+                                    handleQuickPrompt(
+                                        "Create a marketing strategy for my business."
+                                    )
+                                }
+                                className="
+                                    group
+                                    w-full
+                                    text-left
+                                    flex
+                                    items-center
+                                    sm:block
+                                    gap-3
+                                    p-4
+                                    sm:p-5
+                                    rounded-2xl
+                                    bg-[#111827]
+                                    border
+                                    border-[#263244]
+                                    hover:border-[#526A91]
+                                    hover:bg-[#151F30]
+                                    active:scale-[0.98]
+                                    transition-all
+                                    duration-200
+                                "
+                            >
+
+                                <div
+                                    className="
+                                        w-11
+                                        h-11
+                                        shrink-0
+                                        flex
+                                        items-center
+                                        justify-center
+                                        rounded-xl
+                                        bg-[#1D2A3D]
+                                        group-hover:bg-[#263A58]
+                                        transition
+                                    "
+                                >
+                                    <ChartNoAxesCombined
+                                        className="
+                                            w-5
+                                            h-5
+                                            text-[#ADC6FF]
+                                        "
+                                    />
                                 </div>
-                            </div>
-                        )}
+
+
+                                <div className="min-w-0 sm:mt-4">
+
+                                    <h2
+                                        className="
+                                            text-sm
+                                            sm:text-base
+                                            font-semibold
+                                            text-[#DCE7F8]
+                                        "
+                                    >
+                                        Marketing strategy
+                                    </h2>
+
+                                    <p
+                                        className="
+                                            mt-1
+                                            text-xs
+                                            sm:text-sm
+                                            leading-relaxed
+                                            text-[#7F8EA3]
+                                            line-clamp-2
+                                        "
+                                    >
+                                        Build campaigns and strategies
+                                        for your target audience.
+                                    </p>
+
+                                </div>
+
+                            </button>
+
+
+                            {/* Code */}
+
+                            <button
+                                onClick={() =>
+                                    handleQuickPrompt(
+                                        "Review my code, identify bugs, and suggest improvements."
+                                    )
+                                }
+                                className="
+                                    group
+                                    w-full
+                                    text-left
+                                    flex
+                                    items-center
+                                    sm:block
+                                    gap-3
+                                    p-4
+                                    sm:p-5
+                                    rounded-2xl
+                                    bg-[#111827]
+                                    border
+                                    border-[#263244]
+                                    hover:border-[#526A91]
+                                    hover:bg-[#151F30]
+                                    active:scale-[0.98]
+                                    transition-all
+                                    duration-200
+                                "
+                            >
+
+                                <div
+                                    className="
+                                        w-11
+                                        h-11
+                                        shrink-0
+                                        flex
+                                        items-center
+                                        justify-center
+                                        rounded-xl
+                                        bg-[#1D2A3D]
+                                        group-hover:bg-[#263A58]
+                                        transition
+                                    "
+                                >
+                                    <Code2
+                                        className="
+                                            w-5
+                                            h-5
+                                            text-[#ADC6FF]
+                                        "
+                                    />
+                                </div>
+
+
+                                <div className="min-w-0 sm:mt-4">
+
+                                    <h2
+                                        className="
+                                            text-sm
+                                            sm:text-base
+                                            font-semibold
+                                            text-[#DCE7F8]
+                                        "
+                                    >
+                                        Review my code
+                                    </h2>
+
+                                    <p
+                                        className="
+                                            mt-1
+                                            text-xs
+                                            sm:text-sm
+                                            leading-relaxed
+                                            text-[#7F8EA3]
+                                            line-clamp-2
+                                        "
+                                    >
+                                        Find bugs, improve performance,
+                                        and refactor code.
+                                    </p>
+
+                                </div>
+
+                            </button>
+
+                        </div>
+
+
+                        <p
+                            className="
+                                text-xs
+                                text-[#65748A]
+                                text-center
+                            "
+                        >
+                            Press Enter to send · Shift + Enter for a new line
+                        </p>
+
                     </div>
                 )}
 
-                {/* AI Response */}
+
+                {/* =====================================
+                    AI / USER MESSAGES
+                ===================================== */}
+
                 {messages.length > 0 && (
-                    <div className="w-full max-w-5xl mx-auto px-4 py-6 space-y-6">
+
+                    <div
+                        className="
+                            w-full
+                            max-w-4xl
+                            mx-auto
+                            px-3
+                            sm:px-5
+                            md:px-6
+                            py-6
+                            sm:py-8
+                            space-y-5
+                            sm:space-y-6
+                        "
+                    >
+
                         {messages.map((msg, index) => (
-                            <div key={index}
-                                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-                            >
-                                <div className={`max-w-[80%] rounded-2xl px-5 py-3 shadow-md  whitespace-pre-wrap
 
+                            <div
+                                key={index}
+                                className={`
+                                    flex
+                                    w-full
                                     ${msg.role === "user"
+                                        ? "justify-end"
+                                        : "justify-start"
+                                    }
+                                `}
+                            >
 
-                                        ? "bg-[#329CEF] text-white"
+                                <div
+                                    className={`
+                                        w-fit
+                                        max-w-[90%]
+                                        sm:max-w-[80%]
+                                        md:max-w-[75%]
+                                        rounded-2xl
+                                        px-4
+                                        sm:px-5
+                                        py-3
+                                        sm:py-3.5
+                                        shadow-md
+                                        whitespace-pre-wrap
+                                        break-words
+                                        leading-relaxed
 
-                                        : "bg-[#1C2637] text-[#E6EDF7]"
-                                    }`}>
-                                    <p className="text-sm mb-2 opacity-70">
-                                        {msg.role === "user" ? "You" : "JazzFlow AI"}
+                                        ${msg.role === "user"
+                                            ? `
+                                                bg-[#329CEF]
+                                                text-white
+                                                rounded-br-md
+                                            `
+                                            : `
+                                                bg-[#151E2D]
+                                                border
+                                                border-[#263244]
+                                                text-[#E6EDF7]
+                                                rounded-bl-md
+                                            `
+                                        }
+                                    `}
+                                >
+
+                                    <p
+                                        className={`
+                                            text-[11px]
+                                            sm:text-xs
+                                            mb-1.5
+                                            font-medium
+
+                                            ${msg.role === "user"
+                                                ? "text-blue-100"
+                                                : "text-[#8290A5]"
+                                            }
+                                        `}
+                                    >
+                                        {msg.role === "user"
+                                            ? "You"
+                                            : "JazzFlow AI"
+                                        }
                                     </p>
-                                    <p>{msg.content}
+
+
+                                    <p
+                                        className="
+                                            text-sm
+                                            sm:text-[15px]
+                                        "
+                                    >
+                                        {msg.content}
+
                                         {loading &&
                                             msg.role === "assistant" &&
                                             index === messages.length - 1 && (
-                                                <span className="animate-pulse ml-1">
+                                                <span
+                                                    className="
+                                                        animate-pulse
+                                                        ml-1
+                                                        text-[#ADC6FF]
+                                                    "
+                                                >
                                                     ▌
                                                 </span>
-                                            )}
+                                            )
+                                        }
                                     </p>
+
                                 </div>
+
                             </div>
+
                         ))}
+
                     </div>
                 )}
+
             </div>
 
-            {/* Loading indication */}
-            {
-                loading && (
-                    <div className="text-slate-400 animate-pulse">
+
+            {/* =====================================
+                THINKING INDICATOR
+            ===================================== */}
+
+            {loading && (
+
+                <div
+                    className="
+                        w-full
+                        max-w-4xl
+                        mx-auto
+                        px-4
+                        sm:px-6
+                        pb-2
+                    "
+                >
+
+                    <div
+                        className="
+                            flex
+                            items-center
+                            gap-2
+                            text-xs
+                            sm:text-sm
+                            text-[#7F8EA3]
+                        "
+                    >
+
+                        <span className="flex gap-1">
+
+                            <span
+                                className="
+                                    w-1.5
+                                    h-1.5
+                                    rounded-full
+                                    bg-[#7F8EA3]
+                                    animate-bounce
+                                "
+                            />
+
+                            <span
+                                className="
+                                    w-1.5
+                                    h-1.5
+                                    rounded-full
+                                    bg-[#7F8EA3]
+                                    animate-bounce
+                                    [animation-delay:150ms]
+                                "
+                            />
+
+                            <span
+                                className="
+                                    w-1.5
+                                    h-1.5
+                                    rounded-full
+                                    bg-[#7F8EA3]
+                                    animate-bounce
+                                    [animation-delay:300ms]
+                                "
+                            />
+
+                        </span>
+
                         JazzFlow AI is thinking...
+
                     </div>
-                )
-            }
 
-            {/* ==================== Input Box ==================== */}
-            <div className="sticky bottom-0 w-full border-t border-[#1F2937] bg-[#0B0F19] px-4 py-4">
+                </div>
+            )}
 
-                <div className="max-w-5xl mx-auto">
 
-                    <div className="flex items-center gap-3 bg-[#111827] border border-[#263244] rounded-2xl px-4 py-3 shadow-lg">
+            {/* =====================================
+                INPUT AREA
+            ===================================== */}
 
-                        {/* Plus Button */}
-                        <button className="text-[#8A9FCE] hover:text-white transition">
-                            <Plus className="w-6 h-6" />
+            <div
+                className="
+                    shrink-0
+                    w-full
+                    border-t
+                    border-[#1F2937]
+                    bg-[#0B0F19]/95
+                    backdrop-blur-md
+                    px-3
+                    sm:px-4
+                    pt-3
+                    pb-[calc(0.75rem+env(safe-area-inset-bottom))]
+                    sm:pb-4
+                "
+            >
+
+                <div
+                    className="
+                        max-w-4xl
+                        mx-auto
+                    "
+                >
+
+                    <div
+                        className="
+                            flex
+                            items-end
+                            gap-2
+                            sm:gap-3
+                            bg-[#111827]
+                            border
+                            border-[#263244]
+                            rounded-2xl
+                            px-3
+                            sm:px-4
+                            py-2.5
+                            sm:py-3
+                            shadow-lg
+                            focus-within:border-[#405675]
+                            transition
+                        "
+                    >
+
+                        {/* PLUS */}
+
+                        <button
+                            type="button"
+                            disabled={loading}
+                            className="
+                                shrink-0
+                                flex
+                                items-center
+                                justify-center
+                                w-9
+                                h-9
+                                sm:w-10
+                                sm:h-10
+                                rounded-xl
+                                text-[#8A9FCE]
+                                hover:text-white
+                                hover:bg-[#1D293A]
+                                disabled:opacity-40
+                                transition
+                            "
+                            aria-label="Add attachment"
+                        >
+                            <Plus
+                                className="
+                                    w-5
+                                    h-5
+                                    sm:w-5.5
+                                    sm:h-5.5
+                                "
+                            />
                         </button>
 
-                        {/* Input */}
+
+                        {/* TEXTAREA */}
+
                         <textarea
                             ref={textareaRef}
                             rows={1}
                             value={message}
                             onChange={handleInputChange}
                             onKeyDown={(e) => {
-                                if (e.key === "Enter" && !e.shiftKey) {
+
+                                if (
+                                    e.key === "Enter" &&
+                                    !e.shiftKey
+                                ) {
+
                                     e.preventDefault();
+
                                     handleSend();
                                 }
+
                             }}
                             disabled={loading}
                             placeholder="Ask JazzFlow anything..."
                             className="
-                            flex-1
-                            resize-none
-                            bg-transparent
-                            outline-none
-                            text-white
-                            placeholder:text-[#7F8EA3]
-                            max-h-40
-                            overflow-y-auto"
+                                flex-1
+                                min-w-0
+                                resize-none
+                                bg-transparent
+                                outline-none
+                                text-sm
+                                sm:text-[15px]
+                                leading-6
+                                text-white
+                                placeholder:text-[#718096]
+                                max-h-40
+                                overflow-y-auto
+                                py-1
+                            "
                         />
 
-                        {/* Send Button */}
+
+                        {/* SEND */}
+
                         <button
+                            type="button"
                             onClick={handleSend}
-                            disabled={!message.trim()}
+                            disabled={
+                                !message.trim() ||
+                                loading
+                            }
                             className="
+                                shrink-0
                                 flex
                                 items-center
                                 justify-center
-                                w-11
-                                h-11
+                                w-10
+                                h-10
+                                sm:w-11
+                                sm:h-11
                                 rounded-xl
                                 bg-[#329CEF]
-                                hover:bg-[#2388db]
-                                disabled:bg-[#374151]
+                                hover:bg-[#2388DB]
+                                active:scale-95
+                                disabled:bg-[#263244]
+                                disabled:text-[#596579]
                                 disabled:cursor-not-allowed
-                                transition
+                                transition-all
                             "
+                            aria-label="Send message"
                         >
-                            <SendHorizontal className="w-5 h-5 text-white" />
+
+                            <SendHorizontal
+                                className="
+                                    w-5
+                                    h-5
+                                "
+                            />
+
                         </button>
 
                     </div>
+
+
+                    {/* INPUT FOOTNOTE */}
+
+                    <p
+                        className="
+                            hidden
+                            sm:block
+                            text-center
+                            text-[11px]
+                            text-[#58667A]
+                            mt-2
+                        "
+                    >
+                        JazzFlow AI can make mistakes. Check important information.
+                    </p>
 
                 </div>
 
             </div>
 
         </div>
-    )
-}
+    );
+};
 
 export default Main;
+
