@@ -20,7 +20,41 @@ const Main = ({
     const [loading, setLoading] = useState(false);
     const [chatId, setChatId] = useState(null);
 
+    // =========================================
+    // Mobile keyboard-safe viewport height
+    // =========================================
+    // iOS Safari / Android Chrome don't shrink the layout
+    // viewport when the on-screen keyboard opens — they shrink
+    // window.visualViewport instead. We track that value and use
+    // it (when available) to size the outer container, so the
+    // input area is always pushed above the keyboard instead of
+    // being covered by it. Falls back to 100dvh/100svh via CSS
+    // when the Visual Viewport API isn't supported.
+    const [viewportHeight, setViewportHeight] = useState(null);
+
     const textareaRef = useRef(null);
+
+    useEffect(() => {
+
+        const vv = window.visualViewport;
+
+        if (!vv) return;
+
+        const handleViewportResize = () => {
+            setViewportHeight(vv.height);
+        };
+
+        handleViewportResize();
+
+        vv.addEventListener("resize", handleViewportResize);
+        vv.addEventListener("scroll", handleViewportResize);
+
+        return () => {
+            vv.removeEventListener("resize", handleViewportResize);
+            vv.removeEventListener("scroll", handleViewportResize);
+        };
+
+    }, []);
 
     // =========================================
     // Generate Chat Title
@@ -250,9 +284,13 @@ const Main = ({
     const handleTextareaFocus = () => {
 
         /*
-         * On mobile, when the keyboard opens,
-         * bring the input area into the visible
-         * viewport.
+         * On mobile, when the keyboard opens, the
+         * visualViewport resize listener (above) already
+         * shrinks the outer container so the input area sits
+         * right above the keyboard. We just nudge the textarea
+         * into view within its own scroll context as a safety
+         * net for browsers where the resize event fires slightly
+         * after focus.
          */
 
         setTimeout(() => {
@@ -261,11 +299,11 @@ const Main = ({
 
                 textareaRef.current.scrollIntoView({
                     behavior: "smooth",
-                    block: "center",
+                    block: "nearest",
                 });
             }
 
-        }, 300);
+        }, 100);
     };
 
     // =========================================
@@ -337,12 +375,23 @@ const Main = ({
                     flex
                     flex-col
                     bg-[#0B0F19]
-                    min-h-screen
+                    h-screen
                     w-full
                     overflow-hidden
                     sm:px-4
                     lg:px-6
                 "
+            style={{
+                // Prefer the live visualViewport height (keyboard-aware)
+                // when available; otherwise fall back to dynamic/small
+                // viewport units. If the browser doesn't support the
+                // dvh unit, the whole inline declaration is dropped and
+                // the h-screen class above takes over instead.
+                height: viewportHeight
+                    ? `${viewportHeight}px`
+                    : "100dvh",
+                minHeight: viewportHeight ? undefined : "100svh",
+            }}
         >
 
             {/* =========================
@@ -788,6 +837,7 @@ const Main = ({
                             rows={1}
                             value={message}
                             onChange={handleInputChange}
+                            onFocus={handleTextareaFocus}
                             onKeyDown={(e) => {
 
                                 if (
