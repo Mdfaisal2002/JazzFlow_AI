@@ -49,6 +49,21 @@ const Sidebar = ({
   }, [historyRefresh]);
 
   // =========================
+  // Lock page scroll while mobile sidebar is open
+  // =========================
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileOpen]);
+
+  // =========================
   // New Chat
   // =========================
 
@@ -161,6 +176,10 @@ const Sidebar = ({
 
       {/* =========================================
           SIDEBAR
+          - h-[100dvh] + flex-col so the sidebar itself
+            NEVER scrolls as a whole.
+          - Only the history list (below) gets its own
+            overflow-y-auto region.
       ========================================= */}
 
       <aside
@@ -173,7 +192,7 @@ const Sidebar = ({
 
           z-50
 
-          h-screen
+          h-dvh
 
           flex
           flex-col
@@ -187,6 +206,8 @@ const Sidebar = ({
           transition-all
           duration-300
           ease-in-out
+
+          overflow-hidden
 
           ${
             mobileOpen
@@ -209,11 +230,12 @@ const Sidebar = ({
       >
 
         {/* =====================================
-            HEADER
+            HEADER (fixed, never scrolls)
         ===================================== */}
 
         <div
           className="
+            shrink-0
             flex
             items-center
             justify-between
@@ -282,10 +304,15 @@ const Sidebar = ({
 
 
         {/* =====================================
-            NAVIGATION
+            NAV SECTION
+            - This is the flexible middle row.
+            - New Chat / Search / History-button stay
+              shrink-0 (fixed).
+            - Only the history LIST below gets
+              flex-1 + min-h-0 + overflow-y-auto.
         ===================================== */}
 
-        <div className="flex-1 p-3 space-y-2 overflow-hidden">
+        <div className="flex-1 min-h-0 flex flex-col p-3 space-y-2">
 
           {/* ===================================
               NEW CHAT
@@ -294,6 +321,7 @@ const Sidebar = ({
           <button
             onClick={handleNewChat}
             className="
+              shrink-0
               w-full
               flex
               items-center
@@ -323,7 +351,6 @@ const Sidebar = ({
 
           </button>
 
-          
 
 
           {/* ===================================
@@ -336,6 +363,7 @@ const Sidebar = ({
               setShowHistory(true);
             }}
             className="
+              shrink-0
               w-full
               flex
               items-center
@@ -373,6 +401,7 @@ const Sidebar = ({
           {showHistory && (
             <div
               className={`
+                shrink-0
                 px-1
                 pt-1
 
@@ -446,6 +475,7 @@ const Sidebar = ({
               }
             }}
             className="
+              shrink-0
               w-full
               flex
               items-center
@@ -478,15 +508,17 @@ const Sidebar = ({
 
           {/* ===================================
               HISTORY LIST
+              - The ONLY scrollable region in the sidebar.
           =================================== */}
 
           {showHistory && (
             <div
               className={`
+                flex-1
+                min-h-0
+                overflow-y-auto
                 mt-2
                 space-y-1
-                max-h-[calc(100vh-250px)]
-                overflow-y-auto
 
                 ${
                   extended
@@ -496,6 +528,7 @@ const Sidebar = ({
 
                 block
               `}
+              style={{ WebkitOverflowScrolling: "touch" }}
             >
 
               {filteredHistory.length === 0 ? (
@@ -583,11 +616,12 @@ const Sidebar = ({
 
 
         {/* =====================================
-            FOOTER
+            FOOTER (fixed, always at bottom)
         ===================================== */}
 
         <div
           className="
+            shrink-0
             p-3
             border-t
             border-slate-800

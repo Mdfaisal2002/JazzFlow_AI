@@ -404,6 +404,7 @@ const Main = ({
                     h-screen
                     w-full
                     overflow-hidden
+                    overscroll-none
                     sm:px-4
                     lg:px-6
                 "
@@ -417,6 +418,7 @@ const Main = ({
                     ? `${viewportHeight}px`
                     : "100dvh",
                 minHeight: viewportHeight ? undefined : "100svh",
+                overscrollBehavior: "none",
             }}
         >
 
@@ -435,6 +437,7 @@ const Main = ({
                 style={{
                     WebkitOverflowScrolling: "touch",
                     touchAction: "pan-y",
+                    overscrollBehavior: "contain",
                 }}
             >
 
@@ -892,10 +895,11 @@ const Main = ({
                             flex-1
                             min-w-0
                             resize-none
+                            items-center
                             bg-transparent
                             outline-none
                             text-white
-                            text-sm
+                            text-sm 
                             sm:text-base
                             leading-6
                             placeholder:text-[#7F8EA3]
@@ -904,6 +908,7 @@ const Main = ({
                         "
                             style={{
                                 WebkitOverflowScrolling: "touch",
+                                fontSize: "16px", // prevents iOS auto-zoom on focus
                             }}
                         />
 
